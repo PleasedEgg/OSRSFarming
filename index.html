@@ -328,8 +328,19 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Text',serif;fon
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="app-title">🌿 Farm Runs</div>
-      <div class="app-sub">OSRS Farming Tracker</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="app-title">🌿 Farm Runs</div>
+          <div class="app-sub">OSRS Farming Tracker</div>
+        </div>
+        <a href="https://buymeacoffee.com/pleasedegg" target="_blank" rel="noopener"
+           title="Buy me a coffee ☕"
+           style="font-size:16px;text-decoration:none;background:transparent;border:1px solid transparent;
+                  border-radius:6px;padding:5px 7px;transition:all 0.2s;display:flex;align-items:center;
+                  opacity:0.45;cursor:pointer;"
+           onmouseover="this.style.opacity='1';this.style.borderColor='var(--gold)';this.style.background='rgba(200,160,48,0.12)'"
+           onmouseout="this.style.opacity='0.45';this.style.borderColor='transparent';this.style.background='transparent'">☕</a>
+      </div>
     </div>
     <div class="sidebar-tabs">
       <button class="sidebar-tab active" onclick="setSidebarTab('runs',this)">Runs</button>
@@ -405,7 +416,7 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Text',serif;fon
         <div id="builderDailyList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;"></div>
         <div style="display:flex;gap:6px;">
           <button class="emoji-picker-btn" id="dailyEmojiBtn" onclick="toggleDailyEmoji()" style="font-size:14px;">🌅</button>
-          <input class="form-input" id="dailyStepInput" placeholder="e.g. Rake for favour at Hosidius" style="flex:1;" onkeydown="if(event.key==='Enter')addDailyStep()">
+          <input class="form-input" id="dailyStepInput" placeholder="e.g. Rake for favour at Miscellania" style="flex:1;" onkeydown="if(event.key==='Enter')addDailyStep()">
           <button class="btn btn-ghost" onclick="addDailyStep()">Add</button>
         </div>
         <div id="dailyEmojiPicker" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-top:6px;">
