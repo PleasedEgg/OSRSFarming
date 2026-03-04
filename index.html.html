@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSRS Farm Run Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1108;--bg2:#121a0c;--bg3:#1a2412;--panel:#1e2b14;--panel2:#243318;
+  --border:#3a5020;--border2:#4a6828;
+  --gold:#c8a030;--gold2:#e8c050;--gold3:#f5d870;--golddim:#7a6010;
+  --green:#5a9e2a;--green2:#7abe40;--greendim:#2a5010;
+  --text:#d8cfa8;--text2:#a8996a;--text3:#6a5a38;
+  --red:#c84030;--red2:#e85040;
+  --purple:#9060c0;--blue:#4080c0;--teal:#30a898;--orange:#d07030;
+  --white:#f0e8d0;--shadow:rgba(0,0,0,0.6);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Text',serif;font-size:15px;min-height:100vh;overflow-x:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* Sidebar */
+.sidebar{width:260px;min-width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-header{padding:16px 16px 12px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.app-title{font-family:'Cinzel',serif;font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:var(--gold2);text-shadow:0 0 20px rgba(200,160,48,0.4);}
+.app-sub{font-size:11px;color:var(--text3);margin-top:2px;font-style:italic;}
+
+/* Tab bar in sidebar */
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+.sidebar-tab{flex:1;padding:8px 4px;font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);background:none;border:none;cursor:pointer;transition:all 0.15s;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.sidebar-tab:hover{color:var(--text2);}
+.sidebar-tab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+
+.sidebar-runs{flex:1;overflow-y:auto;padding:10px 8px;}
+.run-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:6px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;margin-bottom:4px;}
+.run-item:hover{background:var(--panel);border-color:var(--border);}
+.run-item.active{background:var(--panel2);border-color:var(--gold);box-shadow:0 0 12px rgba(200,160,48,0.15),inset 0 0 8px rgba(200,160,48,0.05);}
+.run-item-icon{font-size:18px;flex-shrink:0;}
+.run-item-info{flex:1;min-width:0;}
+.run-item-name{font-family:'Cinzel',serif;font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.run-item.active .run-item-name{color:var(--gold2);}
+.run-item-meta{font-size:10px;color:var(--text3);margin-top:1px;}
+.run-item-del{opacity:0;font-size:14px;color:var(--red);background:none;border:none;cursor:pointer;padding:2px 4px;transition:opacity 0.15s;border-radius:3px;}
+.run-item:hover .run-item-del{opacity:1;}
+.run-item-del:hover{background:rgba(200,64,48,0.2);}
+.btn-new-run{margin:0 8px 8px;width:calc(100% - 16px);padding:10px;background:linear-gradient(135deg,var(--golddim),#4a3800);border:1px solid var(--gold);border-radius:6px;color:var(--gold2);font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-new-run:hover{background:linear-gradient(135deg,#7a6010,#5a4000);box-shadow:0 0 16px rgba(200,160,48,0.3);transform:translateY(-1px);}
+.sidebar-stats{padding:12px 16px;border-top:1px solid var(--border);background:var(--bg3);font-size:11px;color:var(--text3);}
+.stat-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.stat-val{color:var(--gold);font-weight:600;font-family:'Cinzel',serif;}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;color:var(--text3);}
+.empty-icon{font-size:64px;margin-bottom:16px;opacity:0.4;}
+.empty-title{font-family:'Cinzel',serif;font-size:18px;color:var(--text2);margin-bottom:8px;}
+.empty-sub{font-size:13px;max-width:320px;line-height:1.6;}
+
+/* Main top tabs */
+.main-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg2);padding:0 28px;flex-shrink:0;}
+.main-tab{padding:12px 18px;font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);background:none;border:none;cursor:pointer;transition:all 0.15s;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.main-tab:hover{color:var(--text2);}
+.main-tab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+
+/* Run view */
+.run-view{padding:24px 28px;}
+.run-topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;}
+.run-title-wrap{flex:1;}
+.run-title-display{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold2);text-shadow:0 0 20px rgba(200,160,48,0.3);}
+.run-meta-row{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.badge{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1px solid;}
+.badge-green{background:rgba(90,158,42,0.15);border-color:var(--green);color:var(--green2);}
+.badge-gold{background:rgba(200,160,48,0.15);border-color:var(--gold);color:var(--gold2);}
+.badge-red{background:rgba(200,64,48,0.15);border-color:var(--red);color:var(--red2);}
+.badge-blue{background:rgba(64,128,192,0.15);border-color:var(--blue);color:#80b8f0;}
+.run-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn-primary{background:linear-gradient(135deg,var(--green),var(--greendim));border-color:var(--green2);color:#d0f0b0;box-shadow:0 2px 8px rgba(90,158,42,0.2);}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px);}
+.btn-gold{background:linear-gradient(135deg,var(--golddim),#3a2800);border-color:var(--gold);color:var(--gold2);}
+.btn-gold:hover{filter:brightness(1.2);transform:translateY(-1px);}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--text2);}
+.btn-ghost:hover{background:var(--panel);border-color:var(--gold);color:var(--gold2);}
+.btn-danger{background:transparent;border-color:var(--red);color:var(--red2);}
+.btn-danger:hover{background:rgba(200,64,48,0.15);}
+.btn-teal{background:rgba(48,168,152,0.15);border-color:var(--teal);color:#60d8c8;}
+.btn-teal:hover{background:rgba(48,168,152,0.25);}
+
+/* Progress */
+.progress-section{margin-bottom:20px;}
+.progress-label{display:flex;justify-content:space-between;align-items:center;font-family:'Cinzel',serif;font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;}
+.progress-count{color:var(--gold);font-weight:600;}
+.progress-bar-wrap{height:8px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--green2));transition:width 0.4s ease;box-shadow:0 0 8px rgba(90,158,42,0.5);}
+.progress-bar-fill.complete{background:linear-gradient(90deg,var(--gold),var(--gold2));box-shadow:0 0 12px rgba(200,160,48,0.6);}
+
+/* Daily */
+.daily-section{margin-bottom:20px;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.section-title{font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:8px;width:100%;}
+.section-title::before{content:'';display:block;width:16px;height:1px;background:var(--border2);}
+.section-title::after{content:'';display:block;flex:1;height:1px;background:var(--border);}
+.daily-steps{display:flex;flex-direction:column;gap:6px;}
+.daily-step{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:6px;background:var(--panel);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;user-select:none;}
+.daily-step:hover{border-color:var(--border2);}
+.daily-step.done{background:rgba(90,158,42,0.1);border-color:var(--green);opacity:0.8;}
+.daily-step-icon{font-size:16px;}
+.daily-step-text{flex:1;font-size:13px;color:var(--text);}
+.daily-step.done .daily-step-text{text-decoration:line-through;color:var(--text3);}
+.daily-step-check{font-size:14px;opacity:0;transition:opacity 0.2s;color:var(--green2);}
+.daily-step.done .daily-step-check{opacity:1;}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);align-items:center;}
+.filter-bar-label{font-family:'Cinzel',serif;font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-right:2px;}
+.filter-pill{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;padding:3px 9px;border-radius:3px;border:1px solid var(--border2);cursor:pointer;transition:all 0.15s;user-select:none;color:var(--text3);background:transparent;}
+.filter-pill:hover{border-color:var(--gold);color:var(--gold);}
+.filter-pill.active{background:var(--golddim);border-color:var(--gold);color:var(--gold2);}
+
+/* Stop cards */
+.stops-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+.stop-card{border-radius:8px;overflow:hidden;border:1.5px solid var(--border);background:var(--panel);transition:all 0.2s;user-select:none;position:relative;}
+.stop-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 4px 12px var(--shadow);}
+.stop-card.done{border-color:var(--green);background:linear-gradient(135deg,rgba(90,158,42,0.12),rgba(42,80,16,0.18));opacity:0.9;}
+.stop-card.immune{border-color:var(--gold);background:linear-gradient(135deg,rgba(200,160,48,0.1),rgba(90,60,8,0.15));box-shadow:0 0 10px rgba(200,160,48,0.12);}
+.stop-card.immune.done{border-color:var(--green);background:linear-gradient(135deg,rgba(90,158,42,0.12),rgba(42,80,16,0.18));}
+.stop-card-header{padding:8px 10px 6px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.stop-num{font-family:'Cinzel',serif;font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);background:var(--golddim);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stop-card.done .stop-num{background:var(--greendim);}
+.stop-card.immune .stop-num{background:var(--golddim);box-shadow:0 0 6px rgba(200,160,48,0.4);}
+.stop-name{font-family:'Cinzel',serif;font-size:10px;font-weight:600;color:var(--text);line-height:1.2;flex:1;}
+.stop-card.done .stop-name{color:var(--green2);}
+.stop-card.immune .stop-name{color:var(--gold2);}
+.stop-tick{font-size:12px;opacity:0;transition:opacity 0.2s;color:var(--green2);}
+.stop-card.done .stop-tick{opacity:1;}
+.stop-card-body{padding:4px 10px 6px;border-top:1px solid rgba(58,80,32,0.5);}
+.stop-tags{display:flex;flex-wrap:wrap;gap:3px;}
+.tag{font-family:'Cinzel',serif;font-size:8px;font-weight:600;letter-spacing:0.3px;padding:2px 6px;border-radius:3px;border:1px solid;text-transform:uppercase;}
+.tag-herb{background:rgba(90,158,42,0.15);border-color:#5a8a2a;color:#9ade60;}
+.tag-fruit{background:rgba(210,140,40,0.15);border-color:#c08030;color:#e8b060;}
+.tag-berry{background:rgba(144,96,192,0.15);border-color:#8060b8;color:#c090f0;}
+.tag-belladonna{background:rgba(200,64,48,0.15);border-color:#a03020;color:#f08070;}
+.tag-allotment{background:rgba(48,168,152,0.15);border-color:#30a898;color:#60d8c8;}
+.tag-flower{background:rgba(200,100,160,0.15);border-color:#c060a0;color:#f090d0;}
+.tag-tree{background:rgba(80,120,40,0.15);border-color:#508028;color:#90c060;}
+.tag-hops{background:rgba(140,100,40,0.15);border-color:#8a6428;color:#c8a060;}
+.tag-cactus{background:rgba(40,140,80,0.15);border-color:#288c50;color:#50d090;}
+.tag-seaweed{background:rgba(20,120,160,0.15);border-color:#1478a0;color:#40b8e0;}
+.tag-coral{background:rgba(220,100,80,0.15);border-color:#d06050;color:#f0a090;}
+.tag-immune{background:rgba(200,160,48,0.2);border-color:var(--gold);color:var(--gold2);}
+.tag-spirit{background:rgba(64,128,192,0.15);border-color:var(--blue);color:#80b8f0;}
+.tag-anima{background:rgba(144,96,192,0.2);border-color:var(--purple);color:#c090f0;}
+.tag-mushroom{background:rgba(160,80,40,0.15);border-color:#a05028;color:#e09060;}
+.tag-custom{background:rgba(100,100,100,0.15);border-color:#606060;color:#b0b0b0;}
+.stop-card.done .tag{opacity:0.6;}
+
+/* Stop card actions row */
+.stop-card-actions{display:flex;gap:4px;padding:4px 8px 7px;border-top:1px solid rgba(58,80,32,0.3);}
+.stop-action-btn{flex:1;padding:4px 6px;font-family:'Cinzel',serif;font-size:8px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;border-radius:3px;border:1px solid;cursor:pointer;transition:all 0.15s;text-align:center;}
+.stop-btn-done{background:rgba(90,158,42,0.1);border-color:var(--green);color:var(--green2);}
+.stop-btn-done:hover{background:rgba(90,158,42,0.25);}
+.stop-btn-done.is-done{background:rgba(90,158,42,0.25);}
+.stop-btn-harvest{background:rgba(200,160,48,0.1);border-color:var(--golddim);color:var(--text3);}
+.stop-btn-harvest:hover{background:rgba(200,160,48,0.2);border-color:var(--gold);color:var(--gold2);}
+.stop-btn-harvest.has-data{border-color:var(--gold);color:var(--gold2);background:rgba(200,160,48,0.15);}
+
+/* Harvest summary on card */
+.harvest-mini{padding:3px 10px 6px;font-size:10px;color:var(--text3);font-style:italic;border-top:1px solid rgba(58,80,32,0.3);}
+.harvest-mini.died{color:var(--red2);}
+
+/* ═══ HARVEST MODAL ═══ */
+.harvest-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.harvest-modal-overlay.open{opacity:1;pointer-events:all;}
+.harvest-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.8),0 0 0 1px rgba(200,160,48,0.1);transform:translateY(20px);transition:transform 0.2s;}
+.harvest-modal-overlay.open .harvest-modal{transform:translateY(0);}
+.hm-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg3);}
+.hm-title{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold2);}
+.hm-sub{font-size:11px;color:var(--text3);margin-top:2px;font-style:italic;}
+.hm-body{padding:16px 20px;}
+.hm-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--bg3);}
+.modal-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all 0.15s;line-height:1;}
+.modal-close:hover{color:var(--red2);background:rgba(200,64,48,0.15);}
+
+/* Harvest patch rows */
+.harvest-patch-row{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:10px;}
+.hp-title{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.hp-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.hp-field{display:flex;flex-direction:column;gap:4px;}
+.hp-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.hp-input{padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Crimson Text',serif;font-size:13px;outline:none;transition:border-color 0.2s;width:100%;}
+.hp-input:focus{border-color:var(--gold);}
+.hp-input::placeholder{color:var(--text3);}
+.hp-select{padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Crimson Text',serif;font-size:13px;outline:none;appearance:none;cursor:pointer;width:100%;}
+.hp-select:focus{border-color:var(--gold);}
+.died-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;user-select:none;}
+.died-check{width:16px;height:16px;border:1px solid var(--border2);border-radius:3px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.died-check.checked{background:var(--red);border-color:var(--red2);}
+.died-check.checked::after{content:'✕';font-size:10px;color:white;}
+.died-label{font-size:12px;color:var(--text2);}
+
+/* ═══ STATS DASHBOARD ═══ */
+.stats-view{padding:24px 28px;}
+.stats-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+.stats-title{font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--gold2);}
+.stats-filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* Stats summary cards */
+.stats-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px;}
+.stats-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.stats-card-val{font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--gold2);margin-bottom:2px;}
+.stats-card-label{font-size:11px;color:var(--text3);font-style:italic;}
+.stats-card.green .stats-card-val{color:var(--green2);}
+.stats-card.red .stats-card-val{color:var(--red2);}
+.stats-card.blue .stats-card-val{color:#80b8f0;}
+
+/* Per-location stats table */
+.stats-section-title{font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:8px;width:100%;margin-bottom:12px;}
+.stats-section-title::before{content:'';display:block;width:16px;height:1px;background:var(--border2);}
+.stats-section-title::after{content:'';display:block;flex:1;height:1px;background:var(--border);}
+
+.stats-table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+.stats-table th{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border2);}
+.stats-table td{padding:9px 10px;border-bottom:1px solid rgba(58,80,32,0.4);font-size:13px;vertical-align:middle;}
+.stats-table tr:hover td{background:rgba(255,255,255,0.02);}
+.stats-table .loc-name{font-family:'Cinzel',serif;font-size:10px;font-weight:600;color:var(--text);}
+.stats-table .num{color:var(--gold);font-weight:600;font-family:'Cinzel',serif;}
+.stats-table .xp-col{color:var(--green2);}
+.stats-table .died-col{color:var(--red2);}
+.stats-table .avg-col{color:var(--text2);}
+.efficiency-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;min-width:60px;}
+.efficiency-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--green2));transition:width 0.3s;}
+.efficiency-fill.poor{background:linear-gradient(90deg,var(--red),var(--red2));}
+.efficiency-fill.mid{background:linear-gradient(90deg,var(--orange),#f0a050);}
+
+/* Harvest log */
+.harvest-log{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;}
+.harvest-log-entry{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;}
+.hle-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.hle-content{flex:1;min-width:0;}
+.hle-location{font-family:'Cinzel',serif;font-size:10px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.hle-detail{font-size:12px;color:var(--text3);}
+.hle-died{color:var(--red2);}
+.hle-xp{color:var(--green2);font-weight:600;}
+.hle-date{font-size:10px;color:var(--text3);white-space:nowrap;margin-top:2px;}
+.hle-del{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px;opacity:0;transition:opacity 0.15s;}
+.harvest-log-entry:hover .hle-del{opacity:1;}
+.hle-del:hover{color:var(--red2);}
+
+/* No data */
+.no-data{text-align:center;padding:40px;color:var(--text3);font-style:italic;font-size:13px;}
+
+/* ═══ BUILDER MODAL ═══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;width:100%;max-width:740px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.8),0 0 0 1px rgba(200,160,48,0.1);transform:translateY(20px);transition:transform 0.2s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:10;}
+.modal-title{font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold2);}
+.modal-body{padding:20px 24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg2);}
+.form-group{margin-bottom:18px;}
+.form-label{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px;}
+.form-input{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Crimson Text',serif;font-size:14px;outline:none;transition:border-color 0.2s;}
+.form-input:focus{border-color:var(--gold);}
+.form-input::placeholder{color:var(--text3);}
+
+/* Location filter pills in builder */
+.loc-filter-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.loc-filter-pill{font-family:'Cinzel',serif;font-size:8px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;padding:3px 8px;border-radius:3px;border:1px solid var(--border2);cursor:pointer;transition:all 0.15s;user-select:none;color:var(--text3);background:transparent;}
+.loc-filter-pill:hover{border-color:var(--gold);color:var(--gold);}
+.loc-filter-pill.active{background:var(--golddim);border-color:var(--gold);color:var(--gold2);}
+
+.location-search-wrap{position:relative;}
+.location-dropdown{position:absolute;top:calc(100%+4px);left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;max-height:240px;overflow-y:auto;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.5);display:none;}
+.location-dropdown.open{display:block;}
+.loc-opt{padding:9px 12px;cursor:pointer;transition:background 0.1s;border-bottom:1px solid rgba(58,80,32,0.3);display:flex;flex-direction:column;gap:2px;}
+.loc-opt:last-child{border-bottom:none;}
+.loc-opt:hover{background:var(--panel2);}
+.loc-opt-name{font-family:'Cinzel',serif;font-size:11px;color:var(--text);}
+.loc-opt-patches{font-size:10px;color:var(--text3);}
+.loc-opt-immune{color:var(--gold);}
+.patch-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.patch-cb{display:none;}
+.patch-label{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;padding:4px 10px;border-radius:4px;border:1px solid;cursor:pointer;transition:all 0.15s;user-select:none;}
+.patch-cb:checked + .patch-label{filter:brightness(1.4);box-shadow:0 0 8px rgba(255,255,255,0.1);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;}
+.toggle-label{font-size:13px;color:var(--text2);}
+.toggle-switch{position:relative;width:40px;height:22px;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border2);border-radius:11px;cursor:pointer;transition:all 0.2s;}
+.toggle-track:before{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:all 0.2s;}
+.toggle-switch input:checked + .toggle-track{background:var(--greendim);border-color:var(--green);}
+.toggle-switch input:checked + .toggle-track:before{transform:translateX(18px);background:var(--green2);}
+.builder-stops{display:flex;flex-direction:column;gap:5px;margin-top:8px;}
+.builder-stop{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);}
+.builder-stop-num{font-family:'Cinzel',serif;font-size:9px;font-weight:700;color:rgba(255,255,255,0.8);background:var(--golddim);border-radius:50%;width:18px;height:18px;min-width:18px;display:flex;align-items:center;justify-content:center;}
+.builder-stop-name{font-family:'Cinzel',serif;font-size:10px;color:var(--text);flex:1;}
+.builder-stop-tags{display:flex;gap:3px;flex-wrap:wrap;}
+.builder-stop-del{background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:2px 4px;border-radius:3px;opacity:0.5;transition:opacity 0.15s;}
+.builder-stop-del:hover{opacity:1;background:rgba(200,64,48,0.15);}
+.notes-textarea{width:100%;min-height:60px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:'Crimson Text',serif;font-size:13px;font-style:italic;outline:none;resize:vertical;transition:border-color 0.2s;}
+.notes-textarea:focus{border-color:var(--gold);}
+.notes-textarea::placeholder{color:var(--text3);}
+.emoji-picker-btn{padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:14px;transition:border-color 0.2s;}
+.emoji-picker-btn:hover{border-color:var(--gold);}
+.emoji-row{display:flex;flex-wrap:wrap;gap:4px;padding:8px;}
+.emoji-opt{font-size:18px;padding:4px 6px;cursor:pointer;border-radius:4px;transition:background 0.1s;}
+.emoji-opt:hover{background:var(--panel2);}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;padding:10px 16px;font-family:'Cinzel',serif;font-size:11px;color:var(--text);box-shadow:0 4px 16px var(--shadow);transform:translateY(20px);opacity:0;transition:all 0.25s;z-index:999;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.stop-card{animation:fadeUp 0.25s ease both;}
+
+/* Time range selector */
+.time-range-select{padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Crimson Text',serif;font-size:13px;outline:none;cursor:pointer;}
+.time-range-select:focus{border-color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="app-title">🌿 Farm Runs</div>
+      <div class="app-sub">OSRS Farming Tracker</div>
+    </div>
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" onclick="setSidebarTab('runs',this)">Runs</button>
+      <button class="sidebar-tab" onclick="setSidebarTab('recent',this)">Recent</button>
+    </div>
+    <div class="sidebar-runs" id="sidebarRuns"></div>
+    <button class="btn-new-run" onclick="openNewRunModal()">+ New Run</button>
+    <div class="sidebar-stats" id="sidebarStats"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="mainArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🌱</div>
+      <div class="empty-title">No Run Selected</div>
+      <div class="empty-sub">Create a new farm run using the button on the left, or select an existing one to track your progress and harvests.</div>
+    </div>
+    <div id="mainContent" style="display:none;flex-direction:column;flex:1;">
+      <div class="main-tabs" id="mainTabs">
+        <button class="main-tab active" onclick="setMainTab('tracker',this)">🌿 Tracker</button>
+        <button class="main-tab" onclick="setMainTab('stats',this)">📊 Statistics</button>
+      </div>
+      <div id="trackerPanel"></div>
+      <div id="statsPanel" style="display:none;"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Builder Modal -->
+<div class="modal-overlay" id="builderModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">New Farm Run</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Run Name & Icon</label>
+        <div style="display:flex;gap:8px;">
+          <button class="emoji-picker-btn" id="emojiBtn" onclick="toggleEmojiPicker()">🌿</button>
+          <input class="form-input" id="runNameInput" placeholder="e.g. Main Herb & Berry Run" style="flex:1;">
+        </div>
+        <div id="emojiPicker" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-top:6px;">
+          <div class="emoji-row" id="emojiRow"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Add Stop</label>
+        <!-- Patch type filter for location search -->
+        <div class="loc-filter-bar" id="locFilterBar"></div>
+        <div class="location-search-wrap">
+          <input class="form-input" id="locSearch" placeholder="Search location (e.g. Catherby, Falador...)" autocomplete="off" oninput="filterLocations()" onfocus="showDropdown()" onblur="hideDropdownDelayed()">
+          <div class="location-dropdown" id="locDropdown"></div>
+        </div>
+      </div>
+      <div class="form-group" id="patchSelectGroup" style="display:none;">
+        <label class="form-label">Patch Types at this Location</label>
+        <div class="patch-grid" id="patchGrid"></div>
+        <div style="margin-top:10px;" id="immuneToggleWrap">
+          <div class="toggle-row">
+            <span class="toggle-label">🛡️ Disease-Immune Patch</span>
+            <label class="toggle-switch"><input type="checkbox" id="immuneToggle"><span class="toggle-track"></span></label>
+          </div>
+        </div>
+        <button class="btn btn-gold" style="margin-top:10px;" onclick="addStopFromPicker()">+ Add to Run</button>
+      </div>
+      <div class="form-group" id="builderStopsGroup" style="display:none;">
+        <label class="form-label">Stops in this Run</label>
+        <div class="builder-stops" id="builderStopsList"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Daily / One-Off Steps (optional)</label>
+        <div id="builderDailyList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <button class="emoji-picker-btn" id="dailyEmojiBtn" onclick="toggleDailyEmoji()" style="font-size:14px;">🌅</button>
+          <input class="form-input" id="dailyStepInput" placeholder="e.g. Rake for favour at Hosidius" style="flex:1;" onkeydown="if(event.key==='Enter')addDailyStep()">
+          <button class="btn btn-ghost" onclick="addDailyStep()">Add</button>
+        </div>
+        <div id="dailyEmojiPicker" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-top:6px;">
+          <div class="emoji-row" id="dailyEmojiRow"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <textarea class="notes-textarea" id="runNotesInput" placeholder="Any reminders or tips for this run..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRun()">💾 Save Run</button>
+    </div>
+  </div>
+</div>
+
+<!-- Harvest Modal -->
+<div class="harvest-modal-overlay" id="harvestModal">
+  <div class="harvest-modal">
+    <div class="hm-header">
+      <div>
+        <div class="hm-title" id="hmTitle">Log Harvest</div>
+        <div class="hm-sub" id="hmSub">Record what you harvested at this stop</div>
+      </div>
+      <button class="modal-close" onclick="closeHarvestModal()">✕</button>
+    </div>
+    <div class="hm-body" id="hmBody"></div>
+    <div class="hm-footer">
+      <button class="btn btn-ghost" onclick="closeHarvestModal()">Skip</button>
+      <button class="btn btn-teal" onclick="saveHarvest()">🌾 Save Harvest</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════
+// DATA
+// ════════════════════════════════════
+const PATCH_TYPES = {
+  herb:      {label:'Herb',       color:'tag-herb',       icon:'🌿'},
+  fruit:     {label:'Fruit Tree', color:'tag-fruit',      icon:'🍎'},
+  berry:     {label:'Bush/Berry', color:'tag-berry',      icon:'🫐'},
+  belladonna:{label:'Belladonna', color:'tag-belladonna', icon:'☠️'},
+  allotment: {label:'Allotment',  color:'tag-allotment',  icon:'🥕'},
+  flower:    {label:'Flower',     color:'tag-flower',     icon:'🌸'},
+  tree:      {label:'Tree',       color:'tag-tree',       icon:'🌳'},
+  hops:      {label:'Hops',       color:'tag-hops',       icon:'🌾'},
+  cactus:    {label:'Cactus',     color:'tag-cactus',     icon:'🌵'},
+  seaweed:   {label:'Seaweed',    color:'tag-seaweed',    icon:'🌊'},
+  coral:     {label:'Coral',      color:'tag-coral',      icon:'🪸'},
+  spirit:    {label:'Spirit Tree',color:'tag-spirit',     icon:'👻'},
+  mushroom:  {label:'Mushroom',   color:'tag-mushroom',   icon:'🍄'},
+  anima:     {label:'Anima',      color:'tag-anima',      icon:'✨'},
+  hardwood:  {label:'Hardwood',   color:'tag-tree',       icon:'🪵'},
+  calquat:   {label:'Calquat',    color:'tag-tree',       icon:'🎋'},
+  celastrus: {label:'Celastrus',  color:'tag-tree',       icon:'🪄'},
+  redwood:   {label:'Redwood',    color:'tag-tree',       icon:'🌲'},
+};
+
+// XP per item (harvest XP, approximate)
+const HARVEST_XP = {
+  // Herbs (base xp per herb collected)
+  'Guam':59,'Marrentill':67,'Tarromin':75,'Harralander':100,'Ranarr':151,'Toadflax':159,
+  'Irit':136,'Avantoe':161,'Kwuarm':184,'Snapdragon':200,'Cadantine':216,'Lantadyme':230,
+  'Dwarf Weed':216,'Torstol':269,'Fellstalk':230,'Celastrus':160,
+  // Fruits
+  'Banana':28,'Apple':8.5,'Orange':10,'Curry':12,'Pineapple':16,'Papaya':27,'Palm':42,'Dragonfruit':70,
+  // Allotments (harvest xp)
+  'Potato':9,'Onion':10,'Cabbage':11,'Tomato':12,'Sweetcorn':17,'Strawberry':26,'Watermelon':48,
+  'Snape grass':26,'Limpwurt root':60,'White lily':60,
+  // Flowers
+  'Marigold':47,'Rosemary':47,'Nasturtium':47,'Woad leaf':47,'Limpwurt':60,'Endarkened':60,
+  // Bushes/Berries
+  'Redberries':64,'Cadavaberries':64,'Dwellberries':102,'Jangerberries':102,'Whiteberries':130,'Poison ivy':674,
+  // Trees
+  'Oak':37,'Willow':67,'Maple':100,'Yew':140,'Magic':200,
+  // Special
+  'Belladonna':512,'Bittercap mushroom':88,'Cactus spine':25,
+  'Giant seaweed':21,'Prickly pear':5,
+  // Coral (XP per coral harvested)
+  'Blood coral':6.5,'Anchor coral':6.5,'Brine coral':6.5,'Swaying coral':6.5,'Brain coral':6.5,
+  // Hops
+  'Barley':9,'Hammerstone':9,'Asgarnian':9,'Jute':13,'Wildblood':23,'Yanillian':14,
+};
+
+// Herb names for dropdown
+const HERB_NAMES = ['Guam','Marrentill','Tarromin','Harralander','Ranarr','Toadflax','Irit','Avantoe','Kwuarm','Snapdragon','Cadantine','Lantadyme','Dwarf Weed','Torstol','Fellstalk'];
+const FRUIT_NAMES = ['Banana','Apple','Orange','Curry','Pineapple','Papaya','Palm','Dragonfruit'];
+const ALLOTMENT_NAMES = ['Potato','Onion','Cabbage','Tomato','Sweetcorn','Strawberry','Watermelon','Snape grass','Limpwurt root','White lily'];
+const FLOWER_NAMES = ['Marigold','Rosemary','Nasturtium','Woad leaf','Limpwurt','Endarkened'];
+const BERRY_NAMES = ['Redberries','Cadavaberries','Dwellberries','Jangerberries','Whiteberries','Poison ivy'];
+const TREE_NAMES = ['Oak','Willow','Maple','Yew','Magic'];
+const HOPS_NAMES = ['Barley','Hammerstone','Asgarnian','Jute','Wildblood','Yanillian'];
+
+const PATCH_ITEMS = {
+  herb:HERB_NAMES, fruit:FRUIT_NAMES, allotment:ALLOTMENT_NAMES,
+  flower:FLOWER_NAMES, berry:BERRY_NAMES, tree:TREE_NAMES, hops:HOPS_NAMES,
+  belladonna:['Belladonna'], cactus:['Cactus spine'], seaweed:['Giant seaweed'],
+  coral:['Blood coral','Anchor coral','Brine coral','Swaying coral','Brain coral'],
+  mushroom:['Bittercap mushroom'], hardwood:['Teak','Mahogany'],
+};
+
+const LOCATIONS = [
+  {name:'Falador',region:'Asgarnia',patches:['allotment','flower','herb'],note:'South of Falador'},
+  {name:'Catherby',region:'Kandarin',patches:['allotment','flower','herb','fruit'],note:'East of Catherby beach'},
+  {name:'Ardougne (North)',region:'Kandarin',patches:['allotment','flower','herb'],note:'North of East Ardougne'},
+  {name:'Canifis',region:'Morytania',patches:['allotment','flower','herb'],note:'East of Canifis'},
+  {name:'Farming Guild',region:'Kandarin',patches:['allotment','flower','herb','fruit','tree','spirit','anima','cactus','redwood','celastrus'],note:'Requires 45 Farm + 60% Hosidius'},
+  {name:'Hosidius',region:'Zeah',patches:['allotment','flower','herb'],note:'Kourend',immune:true},
+  {name:'Weiss',region:'Fremennik',patches:['herb'],note:"Req My Arm's Big Adventure",immune:true},
+  {name:'Troll Stronghold',region:'Troll Country',patches:['herb'],note:"Req My Arm's Big Adventure",immune:true},
+  {name:'Ardougne Farm (South)',region:'Kandarin',patches:['herb'],note:'South of East Ardougne'},
+  {name:'Ectophial (Port Phasmatys)',region:'Morytania',patches:['herb'],note:'Use Ectophial to teleport'},
+  {name:'Civitas illa Fortis',region:'Varlamore',patches:['herb'],note:"Req Twilight's Promise"},
+  {name:'Varlamore (Outer)',region:'Varlamore',patches:['herb'],note:'Second Varlamore herb patch'},
+  {name:'Champions Guild',region:'Misthalin',patches:['berry'],note:'South-west of Varrock'},
+  {name:'Ardougne Monastery',region:'Kandarin',patches:['berry'],note:'South of Ardougne'},
+  {name:'Rimmington',region:'Asgarnia',patches:['berry'],note:'North of Rimmington'},
+  {name:'Etceteria',region:'Fremennik',patches:['berry'],note:'Req Throne of Miscellania'},
+  {name:'Brimhaven',region:'Karamja',patches:['fruit'],note:'East side of Brimhaven'},
+  {name:'Gnome Stronghold',region:'Kandarin',patches:['fruit'],note:'Tree Gnome Stronghold'},
+  {name:'Lletya',region:'Tirannwn',patches:['fruit'],note:'Req Song of the Elves'},
+  {name:'Tai Bwo Wannai',region:'Karamja',patches:['fruit'],note:'South of Brimhaven'},
+  {name:'Spirit Tree Varrock',region:'Misthalin',patches:['fruit'],note:'Grand Exchange area'},
+  {name:'Draynor Manor',region:'Misthalin',patches:['belladonna'],note:'North-east of Draynor'},
+  {name:'Auburnvale',region:'Varlamore',patches:['belladonna'],note:'Varlamore belladonna patch'},
+  {name:'Al Kharid',region:'Kharidian Desert',patches:['cactus'],note:'East of Al Kharid palace'},
+  {name:'Harmony Island',region:'Morytania',patches:['herb'],note:'Req Morytania diary'},
+  {name:'Morytania (Mushroom)',region:'Morytania',patches:['mushroom'],note:'South-east of Canifis'},
+  {name:'Fossil Island (Seaweed)',region:'Fossil Island',patches:['seaweed'],note:'2 patches · Req Bone Voyage · pay Mernia 200 numulites'},
+  {name:'Fossil Island (Hardwood)',region:'Fossil Island',patches:['hardwood'],note:'3 patches · Req Bone Voyage'},
+  {name:'Coral Nurseries (Great Conch)',region:'Varlamore',patches:['coral'],note:'2 nurseries · Req Troubled Tortugans · wear diving gear'},
+  {name:'Lumbridge (Hops)',region:'Misthalin',patches:['hops'],note:'East of Lumbridge'},
+  {name:"McGrubor's Wood",region:'Kandarin',patches:['hops'],note:"SE of Seers' Village"},
+  {name:'Yanille',region:'Kandarin',patches:['hops'],note:'NW of Yanille'},
+  {name:'Entrana',region:'Asgarnia',patches:['hops'],note:'Entrana island'},
+  {name:'Lumbridge',region:'Misthalin',patches:['tree'],note:'Behind Lumbridge Castle'},
+  {name:'Varrock',region:'Misthalin',patches:['tree'],note:'Next to Varrock Palace'},
+  {name:'Falador Park',region:'Asgarnia',patches:['tree'],note:'In Falador Park'},
+  {name:'Taverley',region:'Asgarnia',patches:['tree'],note:'South of Taverley'},
+  {name:'Gnome Stronghold (Tree)',region:'Kandarin',patches:['tree'],note:'Tree Gnome Stronghold'},
+  {name:'Port Sarim',region:'Asgarnia',patches:['spirit'],note:'Spirit tree patch'},
+  {name:'Tai Bwo Wannai (Calquat)',region:'Karamja',patches:['calquat'],note:'Inside village'},
+  {name:'Farming Guild (Celastrus)',region:'Kandarin',patches:['celastrus'],note:'Req 85 Farming'},
+  {name:'Farming Guild (Redwood)',region:'Kandarin',patches:['redwood'],note:'Req 90 Farming'},
+  {name:'Farming Guild (Anima)',region:'Kandarin',patches:['anima'],note:'Req 76 Farming'},
+];
+
+const EMOJIS=['🌿','🍎','🌱','🌾','🌸','🍀','🍄','🌳','🌲','🎋','🌵','🫐','☠️','🥕','🌅','⚔️','🗺️','💰','🏆','⚗️','🌙','☀️','🔥','💎','🛡️','✨','🧪','🌊','🍇','🌻'];
+
+// ════════════════════════════════════
+// STATE
+// ════════════════════════════════════
+let state={runs:[],activeRunId:null};
+let builderState={stops:[],dailySteps:[],emoji:'🌿',dailyEmoji:'🌅',editId:null,selectedLocation:null};
+let harvestModalState={runId:null,stopIdx:null,stop:null};
+let activeFilters=new Set(['all']);  // multi-select; 'all' means no filter
+let activeLocFilters=new Set(['all']); // multi-select for location search filter
+let activeMainTab='tracker';
+let activeSidebarTab='runs';
+let statsTimeRange=30;
+
+function loadState(){try{const s=localStorage.getItem('osrs_farmruns_v3');if(s)state=JSON.parse(s);}catch(e){}}
+function saveState(){localStorage.setItem('osrs_farmruns_v3',JSON.stringify(state));}
+
+// ════════════════════════════════════
+// TABS
+// ════════════════════════════════════
+function setSidebarTab(tab,el){
+  activeSidebarTab=tab;
+  document.querySelectorAll('.sidebar-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderSidebar();
+}
+
+function setMainTab(tab,el){
+  activeMainTab=tab;
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('trackerPanel').style.display=tab==='tracker'?'block':'none';
+  document.getElementById('statsPanel').style.display=tab==='stats'?'block':'none';
+  if(tab==='stats') renderStats();
+}
+
+// ════════════════════════════════════
+// SIDEBAR
+// ════════════════════════════════════
+function renderSidebar(){
+  const el=document.getElementById('sidebarRuns');
+  if(activeSidebarTab==='runs'){
+    if(!state.runs.length){
+      el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;font-style:italic;">No runs yet. Create one!</div>';
+    } else {
+      el.innerHTML=state.runs.map(r=>{
+        const done=(r.stopsDone||[]).length,total=(r.stops||[]).length;
+        const pct=total?Math.round(done/total*100):0;
+        return`<div class="run-item${r.id===state.activeRunId?' active':''}" onclick="selectRun('${r.id}')">
+          <div class="run-item-icon">${r.emoji||'🌿'}</div>
+          <div class="run-item-info">
+            <div class="run-item-name">${r.name}</div>
+            <div class="run-item-meta">${total} stops · ${pct}% · ${r.runCount||0} runs</div>
+          </div>
+          <button class="run-item-del" onclick="event.stopPropagation();deleteRun('${r.id}')" title="Delete">✕</button>
+        </div>`;
+      }).join('');
+    }
+  } else {
+    // Recent harvests across all runs
+    const allLogs=state.runs.flatMap(r=>(r.harvestLog||[]).map(l=>({...l,runName:r.name,runEmoji:r.emoji||'🌿'})));
+    allLogs.sort((a,b)=>b.ts-a.ts);
+    const recent=allLogs.slice(0,15);
+    if(!recent.length){
+      el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;font-style:italic;">No harvests logged yet.</div>';
+    } else {
+      el.innerHTML=recent.map(l=>`
+        <div style="padding:8px 10px;border-bottom:1px solid rgba(58,80,32,0.4);">
+          <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--text2);">${l.runEmoji} ${l.location}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${l.died?'<span style="color:var(--red2);">💀 Died</span>':`${l.qty} ${l.item||l.patchType}`} · ${timeSince(l.ts)}</div>
+        </div>`).join('');
+    }
+  }
+  const totalDone=state.runs.reduce((a,r)=>a+(r.runCount||0),0);
+  const totalHarvests=state.runs.reduce((a,r)=>a+(r.harvestLog||[]).filter(l=>!l.died).reduce((b,l)=>b+l.qty,0),0);
+  const totalXp=state.runs.reduce((a,r)=>a+(r.harvestLog||[]).reduce((b,l)=>b+(l.xp||0),0),0);
+  document.getElementById('sidebarStats').innerHTML=`
+    <div class="stat-row"><span>Runs Done</span><span class="stat-val">${totalDone}</span></div>
+    <div class="stat-row"><span>Items Harvested</span><span class="stat-val">${totalHarvests.toLocaleString()}</span></div>
+    <div class="stat-row"><span>XP Earned</span><span class="stat-val">${formatXp(totalXp)}</span></div>
+    <div class="stat-row"><span>Routes Saved</span><span class="stat-val">${state.runs.length}</span></div>`;
+}
+
+function selectRun(id){
+  state.activeRunId=id;
+  activeFilters=new Set(['all']);
+  activeMainTab='tracker';
+  saveState();
+  renderSidebar();
+  renderMainArea();
+}
+
+function deleteRun(id){
+  if(!confirm('Delete this run?'))return;
+  state.runs=state.runs.filter(r=>r.id!==id);
+  if(state.activeRunId===id)state.activeRunId=null;
+  saveState();renderSidebar();renderMainArea();
+}
+
+// ════════════════════════════════════
+// MAIN AREA
+// ════════════════════════════════════
+function renderMainArea(){
+  const run=state.runs.find(r=>r.id===state.activeRunId);
+  document.getElementById('emptyState').style.display=run?'none':'flex';
+  document.getElementById('mainContent').style.display=run?'flex':'none';
+  if(!run)return;
+  document.getElementById('trackerPanel').style.display=activeMainTab==='tracker'?'block':'none';
+  document.getElementById('statsPanel').style.display=activeMainTab==='stats'?'block':'none';
+  renderRunView();
+  if(activeMainTab==='stats')renderStats();
+}
+
+// ════════════════════════════════════
+// RUN TRACKER
+// ════════════════════════════════════
+function renderRunView(){
+  const run=state.runs.find(r=>r.id===state.activeRunId);
+  if(!run)return;
+  const stopsDone=run.stopsDone||[];
+  const dailyDone=run.dailyDone||[];
+  const total=(run.stops||[]).length;
+  const done=stopsDone.length;
+  const pct=total?Math.round(done/total*100):0;
+  const complete=done===total&&total>0;
+
+  const allPatches=[...new Set((run.stops||[]).flatMap(s=>s.patches||[]))];
+  const isAllActive=activeFilters.has('all');
+  const filterPills=`
+    <div class="filter-pill${isAllActive?' active':''}" onclick="toggleFilter('all')">🌿 All</div>
+    ${allPatches.map(p=>{
+      const pt=PATCH_TYPES[p];
+      const lbl=pt?.label||p;
+      const isActive=!isAllActive&&activeFilters.has(p);
+      return`<div class="filter-pill${isActive?' active':''}" onclick="toggleFilter('${p}')">${pt?.icon||''} ${lbl}</div>`;
+    }).join('')}
+    ${!isAllActive?`<div class="filter-pill" style="border-color:var(--red);color:var(--red2);margin-left:4px;" onclick="clearFilters()">✕ Clear</div>`:''}
+  `;
+
+  const filteredStops=(run.stops||[]).filter(s=>
+    activeFilters.has('all')||(s.patches||[]).some(p=>activeFilters.has(p))
+  );
+
+  const dailyHTML=(run.dailySteps||[]).length?`
+    <div class="daily-section">
+      <div class="section-header"><div class="section-title">Daily Steps</div></div>
+      <div class="daily-steps">
+        ${(run.dailySteps||[]).map((step,i)=>`
+          <div class="daily-step${dailyDone.includes(i)?' done':''}" onclick="toggleDailyDone('${run.id}',${i})">
+            <span class="daily-step-icon">${step.emoji||'🌅'}</span>
+            <span class="daily-step-text">${step.text}</span>
+            <span class="daily-step-check">✓</span>
+          </div>`).join('')}
+      </div>
+    </div>`:'';
+
+  const stopsHTML=filteredStops.map((s,fi)=>{
+    const idx=(run.stops||[]).indexOf(s);
+    const isDone=stopsDone.includes(idx);
+    // Get latest harvest for this stop
+    const latestH=getLatestHarvest(run,idx);
+    const harvestMini=latestH?(latestH.died
+      ?`<div class="harvest-mini died">💀 Last run: died</div>`
+      :`<div class="harvest-mini">Last: ${latestH.patches?.map(p=>`${p.qty} ${p.item||p.patchType}`).filter(Boolean).join(', ').slice(0,40)||'harvested'}</div>`):'';
+    const hasHarvest=!!(run.harvestLog||[]).find(l=>l.stopIdx===idx);
+    return`<div class="stop-card${isDone?' done':''}${s.immune?' immune':''}" style="animation-delay:${fi*0.03}s">
+      <div class="stop-card-header" onclick="toggleStop('${run.id}',${idx})">
+        <div class="stop-num">${idx+1}</div>
+        <div class="stop-name">${s.name}</div>
+        <span class="stop-tick">✓</span>
+      </div>
+      <div class="stop-card-body">
+        <div class="stop-tags">
+          ${s.immune?'<span class="tag tag-immune">⚜ Immune</span>':''}
+          ${(s.patches||[]).map(p=>{const pt=PATCH_TYPES[p];return`<span class="tag ${pt?.color||'tag-custom'}">${pt?.icon||''} ${pt?.label||p}</span>`;}).join('')}
+        </div>
+      </div>
+      ${harvestMini}
+      <div class="stop-card-actions">
+        <button class="stop-action-btn stop-btn-done${isDone?' is-done':''}" onclick="toggleStop('${run.id}',${idx})">
+          ${isDone?'✓ Done':'Mark Done'}
+        </button>
+        <button class="stop-action-btn stop-btn-harvest${hasHarvest?' has-data':''}" onclick="openHarvestModal('${run.id}',${idx})">
+          🌾 Log Harvest
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const notesHTML=run.notes?`
+    <div style="margin-top:20px;">
+      <div class="section-header"><div class="section-title">Notes</div></div>
+      <div style="padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-style:italic;color:var(--text3);font-size:13px;">${run.notes}</div>
+    </div>`:'';
+
+  document.getElementById('trackerPanel').innerHTML=`
+    <div class="run-view">
+      <div class="run-topbar">
+        <div class="run-title-wrap">
+          <div style="display:flex;align-items:center;">
+            <span style="font-size:24px;margin-right:10px;">${run.emoji||'🌿'}</span>
+            <div class="run-title-display">${run.name}</div>
+          </div>
+          <div class="run-meta-row">
+            <span class="badge badge-gold">${total} Stops</span>
+            <span class="badge ${complete?'badge-green':'badge-blue'}">${pct}% Done</span>
+            <span class="badge badge-gold">🏆 ${run.runCount||0} Runs</span>
+            ${run.lastCompleted?`<span class="badge badge-blue">Last: ${timeSince(run.lastCompleted)}</span>`:''}
+          </div>
+        </div>
+        <div class="run-actions">
+          <button class="btn btn-primary" onclick="completeRun('${run.id}')">✔ Complete Run</button>
+          <button class="btn btn-ghost" onclick="editRun('${run.id}')">✏️ Edit</button>
+          <button class="btn btn-ghost" onclick="resetStops('${run.id}')">↺ Reset</button>
+        </div>
+      </div>
+      <div class="progress-section">
+        <div class="progress-label"><span>Progress</span><span class="progress-count">${done} / ${total} stops</span></div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill${complete?' complete':''}" style="width:${pct}%"></div></div>
+      </div>
+      ${dailyHTML}
+      <div class="filter-bar">
+        <span class="filter-bar-label">Filter:</span>
+        ${filterPills}
+      </div>
+      <div class="stops-grid">${stopsHTML}</div>
+      ${notesHTML}
+      <div style="height:32px;"></div>
+    </div>`;
+}
+
+function toggleFilter(f){
+  if(f==='all'){activeFilters=new Set(['all']);}
+  else{
+    activeFilters.delete('all');
+    if(activeFilters.has(f))activeFilters.delete(f);
+    else activeFilters.add(f);
+    if(activeFilters.size===0)activeFilters=new Set(['all']);
+  }
+  renderRunView();
+}
+function clearFilters(){activeFilters=new Set(['all']);renderRunView();}
+
+function toggleStop(runId,idx){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.stopsDone=run.stopsDone||[];
+  if(run.stopsDone.includes(idx))run.stopsDone=run.stopsDone.filter(i=>i!==idx);
+  else run.stopsDone.push(idx);
+  saveState();renderSidebar();renderRunView();
+}
+
+function toggleDailyDone(runId,idx){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.dailyDone=run.dailyDone||[];
+  if(run.dailyDone.includes(idx))run.dailyDone=run.dailyDone.filter(i=>i!==idx);
+  else run.dailyDone.push(idx);
+  saveState();renderRunView();
+}
+
+function completeRun(runId){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.runCount=(run.runCount||0)+1;
+  run.lastCompleted=Date.now();
+  run.stopsDone=[];run.dailyDone=[];
+  saveState();renderSidebar();renderRunView();
+  showToast(`🏆 Run complete! Total: ${run.runCount}`);
+}
+
+function resetStops(runId){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.stopsDone=[];run.dailyDone=[];
+  saveState();renderRunView();showToast('↺ Run reset');
+}
+
+// ════════════════════════════════════
+// HARVEST MODAL
+// ════════════════════════════════════
+let harvestDiedState={};
+let harvestPatchData={};
+
+function getLatestHarvest(run,stopIdx){
+  const logs=(run.harvestLog||[]).filter(l=>l.stopIdx===stopIdx);
+  if(!logs.length)return null;
+  return logs.sort((a,b)=>b.ts-a.ts)[0];
+}
+
+function openHarvestModal(runId,stopIdx){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  const stop=(run.stops||[])[stopIdx];if(!stop)return;
+  harvestModalState={runId,stopIdx,stop};
+  harvestDiedState={};harvestPatchData={};
+
+  document.getElementById('hmTitle').textContent=`Log Harvest — ${stop.name}`;
+  document.getElementById('hmSub').textContent=`${(stop.patches||[]).map(p=>PATCH_TYPES[p]?.label||p).join(', ')}`;
+
+  const body=document.getElementById('hmBody');
+  body.innerHTML=(stop.patches||[]).map(patchType=>{
+    const pt=PATCH_TYPES[patchType];
+    const items=PATCH_ITEMS[patchType]||[];
+    const id=`hp_${patchType}`;
+    return`<div class="harvest-patch-row" id="row_${patchType}">
+      <div class="hp-title">${pt?.icon||'🌿'} ${pt?.label||patchType}</div>
+      <div class="died-toggle" onclick="toggleDied('${patchType}')">
+        <div class="died-check" id="died_${patchType}"></div>
+        <span class="died-label">💀 Patch died / diseased</span>
+      </div>
+      <div id="harvest_fields_${patchType}" style="margin-top:10px;">
+        <div class="hp-fields">
+          ${items.length?`<div class="hp-field">
+            <div class="hp-label">What were you growing?</div>
+            <select class="hp-select" id="item_${patchType}" onchange="updateXpPreview('${patchType}')">
+              <option value="">— Select —</option>
+              ${items.map(i=>`<option value="${i}">${i}</option>`).join('')}
+              <option value="custom">Other / Custom</option>
+            </select>
+          </div>`:`<div class="hp-field">
+            <div class="hp-label">What were you growing?</div>
+            <input class="hp-input" id="item_${patchType}" placeholder="Item name" oninput="updateXpPreview('${patchType}')">
+          </div>`}
+          <div class="hp-field">
+            <div class="hp-label">Quantity Harvested</div>
+            <input class="hp-input" type="number" min="0" id="qty_${patchType}" placeholder="e.g. 9" oninput="updateXpPreview('${patchType}')">
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:11px;color:var(--green2);font-style:italic;" id="xp_preview_${patchType}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('harvestModal').classList.add('open');
+}
+
+function toggleDied(patchType){
+  harvestDiedState[patchType]=!harvestDiedState[patchType];
+  const check=document.getElementById(`died_${patchType}`);
+  const fields=document.getElementById(`harvest_fields_${patchType}`);
+  if(harvestDiedState[patchType]){
+    check.classList.add('checked');
+    fields.style.opacity='0.4';fields.style.pointerEvents='none';
+  } else {
+    check.classList.remove('checked');
+    fields.style.opacity='1';fields.style.pointerEvents='all';
+  }
+}
+
+function updateXpPreview(patchType){
+  const itemEl=document.getElementById(`item_${patchType}`);
+  const qtyEl=document.getElementById(`qty_${patchType}`);
+  const preview=document.getElementById(`xp_preview_${patchType}`);
+  if(!itemEl||!qtyEl||!preview)return;
+  const item=itemEl.value||itemEl.innerText||'';
+  const qty=parseInt(qtyEl.value)||0;
+  const xpPer=HARVEST_XP[item]||0;
+  if(xpPer&&qty){
+    const total=Math.round(xpPer*qty);
+    preview.textContent=`≈ ${total.toLocaleString()} XP (${xpPer} xp × ${qty})`;
+  } else {
+    preview.textContent=item&&qty?'XP rate unknown for this item':'';
+  }
+}
+
+function closeHarvestModal(){document.getElementById('harvestModal').classList.remove('open');}
+
+function saveHarvest(){
+  const {runId,stopIdx,stop}=harvestModalState;
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.harvestLog=run.harvestLog||[];
+
+  const patches=(stop.patches||[]).map(patchType=>{
+    const died=!!harvestDiedState[patchType];
+    let item='',qty=0,xp=0;
+    if(!died){
+      const itemEl=document.getElementById(`item_${patchType}`);
+      const qtyEl=document.getElementById(`qty_${patchType}`);
+      item=itemEl?(itemEl.tagName==='SELECT'?itemEl.value:itemEl.value)||'':'';
+      qty=parseInt(qtyEl?.value)||0;
+      const xpPer=HARVEST_XP[item]||0;
+      xp=Math.round(xpPer*qty);
+    }
+    return{patchType,item,qty,died,xp};
+  });
+
+  const totalQty=patches.reduce((a,p)=>a+p.qty,0);
+  const totalXp=patches.reduce((a,p)=>a+p.xp,0);
+  const anyDied=patches.some(p=>p.died);
+
+  const logEntry={
+    id:'h_'+Date.now(),
+    runId,stopIdx,
+    location:stop.name,
+    patches,
+    qty:totalQty,xp:totalXp,died:anyDied,
+    ts:Date.now(),
+  };
+
+  run.harvestLog.push(logEntry);
+  saveState();
+  closeHarvestModal();
+  renderSidebar();renderRunView();
+  showToast(anyDied?`💀 Logged — some patches died`:`🌾 Harvest logged! +${formatXp(totalXp)} XP`);
+}
+
+// ════════════════════════════════════
+// STATISTICS
+// ════════════════════════════════════
+function renderStats(){
+  const run=state.runs.find(r=>r.id===state.activeRunId);
+  if(!run){document.getElementById('statsPanel').innerHTML='<div class="no-data">Select a run to view statistics.</div>';return;}
+
+  const cutoff=Date.now()-statsTimeRange*24*60*60*1000;
+  const logs=(run.harvestLog||[]).filter(l=>statsTimeRange===0||l.ts>=cutoff);
+
+  if(!logs.length){
+    document.getElementById('statsPanel').innerHTML=`
+      <div class="stats-view">
+        <div class="stats-topbar">
+          <div class="stats-title">📊 Statistics — ${run.name}</div>
+          <div class="stats-filter-row">
+            <select class="time-range-select" onchange="statsTimeRange=parseInt(this.value);renderStats()">
+              <option value="7" ${statsTimeRange===7?'selected':''}>Last 7 days</option>
+              <option value="30" ${statsTimeRange===30?'selected':''}>Last 30 days</option>
+              <option value="90" ${statsTimeRange===90?'selected':''}>Last 90 days</option>
+              <option value="0" ${statsTimeRange===0?'selected':''}>All time</option>
+            </select>
+          </div>
+        </div>
+        <div class="no-data">No harvests logged for this period.<br>Use the 🌾 Log Harvest button on any stop to start tracking.</div>
+      </div>`;
+    return;
+  }
+
+  // Summary stats
+  const totalQty=logs.filter(l=>!l.died).reduce((a,l)=>a+l.qty,0);
+  const totalXp=logs.reduce((a,l)=>a+l.xp,0);
+  const totalDied=logs.filter(l=>l.died).length;
+  const dieRate=logs.length?Math.round(totalDied/logs.length*100):0;
+
+  // Per-location stats
+  const locMap={};
+  logs.forEach(l=>{
+    if(!locMap[l.location])locMap[l.location]={location:l.location,visits:0,harvests:0,xp:0,died:0,patches:{}};
+    const lm=locMap[l.location];
+    lm.visits++;
+    if(!l.died){lm.harvests+=l.qty;lm.xp+=l.xp;}
+    else lm.died++;
+    // per patch detail
+    (l.patches||[]).forEach(p=>{
+      const k=`${p.patchType}:${p.item||'?'}`;
+      if(!lm.patches[k])lm.patches[k]={patchType:p.patchType,item:p.item,total:0,xp:0,visits:0};
+      lm.patches[k].visits++;
+      if(!p.died){lm.patches[k].total+=p.qty;lm.patches[k].xp+=p.xp;}
+    });
+  });
+  const locArr=Object.values(locMap).sort((a,b)=>b.xp-a.xp);
+  const maxXp=Math.max(...locArr.map(l=>l.xp),1);
+
+  // Per item breakdown
+  const itemMap={};
+  logs.forEach(l=>{
+    (l.patches||[]).forEach(p=>{
+      if(p.died||!p.item||!p.qty)return;
+      if(!itemMap[p.item])itemMap[p.item]={item:p.item,patchType:p.patchType,total:0,xp:0,count:0};
+      itemMap[p.item].total+=p.qty;
+      itemMap[p.item].xp+=p.xp;
+      itemMap[p.item].count++;
+    });
+  });
+  const itemArr=Object.values(itemMap).sort((a,b)=>b.xp-a.xp);
+
+  // Recent log
+  const recentLogs=[...logs].sort((a,b)=>b.ts-a.ts).slice(0,20);
+
+  document.getElementById('statsPanel').innerHTML=`
+    <div class="stats-view">
+      <div class="stats-topbar">
+        <div class="stats-title">📊 Statistics — ${run.name}</div>
+        <div class="stats-filter-row">
+          <select class="time-range-select" onchange="statsTimeRange=parseInt(this.value);renderStats()">
+            <option value="7" ${statsTimeRange===7?'selected':''}>Last 7 days</option>
+            <option value="30" ${statsTimeRange===30?'selected':''}>Last 30 days</option>
+            <option value="90" ${statsTimeRange===90?'selected':''}>Last 90 days</option>
+            <option value="0" ${statsTimeRange===0?'selected':''}>All time</option>
+          </select>
+          <button class="btn btn-danger" style="font-size:9px;padding:5px 10px;" onclick="clearHarvestLog('${run.id}')">🗑 Clear Log</button>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="stats-summary">
+        <div class="stats-card green">
+          <div class="stats-card-val">${totalQty.toLocaleString()}</div>
+          <div class="stats-card-label">Items Harvested</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-val">${formatXp(totalXp)}</div>
+          <div class="stats-card-label">XP Earned</div>
+        </div>
+        <div class="stats-card blue">
+          <div class="stats-card-val">${logs.length}</div>
+          <div class="stats-card-label">Harvests Logged</div>
+        </div>
+        <div class="stats-card${dieRate>20?' red':''}">
+          <div class="stats-card-val">${dieRate}%</div>
+          <div class="stats-card-label">Die Rate</div>
+        </div>
+      </div>
+
+      <!-- Per location -->
+      <div class="stats-section-title">Efficiency by Location</div>
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Location</th><th>Visits</th><th>Harvested</th><th>XP</th><th>Avg/Visit</th><th>Deaths</th><th>Efficiency</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${locArr.map(l=>{
+            const avg=l.visits?Math.round(l.harvests/l.visits*10)/10:0;
+            const effPct=Math.round(l.xp/maxXp*100);
+
+            return`<tr>
+              <td class="loc-name">${l.location}</td>
+              <td class="num">${l.visits}</td>
+              <td class="num">${l.harvests.toLocaleString()}</td>
+              <td class="xp-col">${formatXp(l.xp)}</td>
+              <td class="avg-col">${avg}</td>
+              <td class="died-col">${l.died>0?`💀 ${l.died}`:'-'}</td>
+              <td><div class="efficiency-bar"><div class="efficiency-fill${effPct<30?' poor':effPct<60?' mid':''}" style="width:${effPct}%"></div></div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <!-- Per item -->
+      ${itemArr.length?`
+      <div class="stats-section-title">Top Items Harvested</div>
+      <table class="stats-table">
+        <thead><tr><th>Item</th><th>Type</th><th>Total</th><th>XP</th><th>Avg per Harvest</th></tr></thead>
+        <tbody>
+          ${itemArr.map(i=>{
+            const pt=PATCH_TYPES[i.patchType];
+            return`<tr>
+              <td class="loc-name">${i.item}</td>
+              <td><span class="tag ${pt?.color||'tag-custom'}">${pt?.icon||''} ${pt?.label||i.patchType}</span></td>
+              <td class="num">${i.total.toLocaleString()}</td>
+              <td class="xp-col">${formatXp(i.xp)}</td>
+              <td class="avg-col">${i.count?Math.round(i.total/i.count*10)/10:0}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`:''}
+
+      <!-- Recent log -->
+      <div class="stats-section-title">Harvest Log</div>
+      <div class="harvest-log">
+        ${recentLogs.map(l=>`
+          <div class="harvest-log-entry">
+            <span class="hle-icon">${l.died?'💀':'🌾'}</span>
+            <div class="hle-content">
+              <div class="hle-location">${l.location}</div>
+              <div class="hle-detail">
+                ${l.died
+                  ?`<span class="hle-died">Patch died</span>`
+                  :`${(l.patches||[]).filter(p=>!p.died&&p.qty).map(p=>`${p.qty}× ${p.item||p.patchType}`).join(', ')}
+                   ${l.xp?`· <span class="hle-xp">+${formatXp(l.xp)} XP</span>`:''}`}
+              </div>
+              <div class="hle-date">${new Date(l.ts).toLocaleDateString()} ${new Date(l.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+            </div>
+            <button class="hle-del" onclick="deleteHarvestEntry('${run.id}','${l.id}')" title="Delete entry">✕</button>
+          </div>`).join('')}
+      </div>
+      <div style="height:32px;"></div>
+    </div>`;
+}
+
+function clearHarvestLog(runId){
+  if(!confirm('Clear all harvest data for this run?'))return;
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.harvestLog=[];
+  saveState();renderStats();showToast('🗑 Harvest log cleared');
+}
+
+function deleteHarvestEntry(runId,entryId){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  run.harvestLog=(run.harvestLog||[]).filter(l=>l.id!==entryId);
+  saveState();renderStats();renderSidebar();
+}
+
+// ════════════════════════════════════
+// BUILDER MODAL
+// ════════════════════════════════════
+function openNewRunModal(){
+  builderState={stops:[],dailySteps:[],emoji:'🌿',dailyEmoji:'🌅',editId:null,selectedLocation:null};
+  activeLocFilter='all';
+  activeLocFilters=new Set(['all']);
+  document.getElementById('modalTitle').textContent='New Farm Run';
+  document.getElementById('runNameInput').value='';
+  document.getElementById('runNotesInput').value='';
+  document.getElementById('emojiBtn').textContent='🌿';
+  document.getElementById('dailyEmojiBtn').textContent='🌅';
+  document.getElementById('locSearch').value='';
+  document.getElementById('patchSelectGroup').style.display='none';
+  document.getElementById('builderStopsGroup').style.display='none';
+  renderBuilderStops();renderBuilderDaily();
+  renderLocFilterBar();
+  document.getElementById('builderModal').classList.add('open');
+  initEmojiPickers();
+}
+
+function editRun(runId){
+  const run=state.runs.find(r=>r.id===runId);if(!run)return;
+  builderState={stops:JSON.parse(JSON.stringify(run.stops||[])),dailySteps:JSON.parse(JSON.stringify(run.dailySteps||[])),emoji:run.emoji||'🌿',dailyEmoji:'🌅',editId:runId,selectedLocation:null};
+  activeLocFilter='all';
+  activeLocFilters=new Set(['all']);
+  document.getElementById('modalTitle').textContent='Edit Run';
+  document.getElementById('runNameInput').value=run.name||'';
+  document.getElementById('runNotesInput').value=run.notes||'';
+  document.getElementById('emojiBtn').textContent=run.emoji||'🌿';
+  document.getElementById('dailyEmojiBtn').textContent='🌅';
+  document.getElementById('locSearch').value='';
+  document.getElementById('patchSelectGroup').style.display='none';
+  renderBuilderStops();renderBuilderDaily();renderLocFilterBar();
+  document.getElementById('builderModal').classList.add('open');
+  initEmojiPickers();
+}
+
+function closeModal(){document.getElementById('builderModal').classList.remove('open');}
+
+function saveRun(){
+  const name=document.getElementById('runNameInput').value.trim();
+  if(!name){showToast('⚠️ Please enter a run name');return;}
+  if(!builderState.stops.length){showToast('⚠️ Add at least one stop');return;}
+  const runData={
+    id:builderState.editId||('run_'+Date.now()),
+    name,emoji:builderState.emoji,
+    stops:builderState.stops,dailySteps:builderState.dailySteps,
+    notes:document.getElementById('runNotesInput').value.trim(),
+    runCount:0,stopsDone:[],dailyDone:[],lastCompleted:null,harvestLog:[],
+  };
+  if(builderState.editId){
+    const idx=state.runs.findIndex(r=>r.id===builderState.editId);
+    if(idx>=0){
+      runData.runCount=state.runs[idx].runCount||0;
+      runData.lastCompleted=state.runs[idx].lastCompleted;
+      runData.stopsDone=state.runs[idx].stopsDone||[];
+      runData.dailyDone=state.runs[idx].dailyDone||[];
+      runData.harvestLog=state.runs[idx].harvestLog||[];
+      state.runs[idx]=runData;
+    }
+  } else {
+    state.runs.push(runData);
+    state.activeRunId=runData.id;
+  }
+  saveState();closeModal();renderSidebar();renderMainArea();
+  showToast(`✅ "${name}" saved`);
+}
+
+// Location filter in builder
+function renderLocFilterBar(){
+  const allPatchTypes=[...new Set(LOCATIONS.flatMap(l=>l.patches))];
+  const isAllActive=activeLocFilters.has('all');
+  const bar=document.getElementById('locFilterBar');
+  bar.innerHTML=[
+    `<div class="loc-filter-pill${isAllActive?' active':''}" onclick="setLocFilter('all')">🌿 All</div>`,
+    ...allPatchTypes.map(p=>{
+      const pt=PATCH_TYPES[p];
+      const lbl=pt?.label||p;
+      const isActive=!isAllActive&&activeLocFilters.has(p);
+      return`<div class="loc-filter-pill${isActive?' active':''}" onclick="setLocFilter('${p}')">${pt?.icon||''} ${lbl}</div>`;
+    }),
+    !isAllActive?`<div class="loc-filter-pill" style="border-color:var(--red);color:var(--red2);" onclick="setLocFilter('clear')">✕ Clear</div>`:''
+  ].join('');
+}
+
+function setLocFilter(f){
+  if(f==='all'){activeLocFilters=new Set(['all']);}
+  else if(f==='clear'){activeLocFilters=new Set(['all']);}
+  else{
+    activeLocFilters.delete('all');
+    if(activeLocFilters.has(f))activeLocFilters.delete(f);
+    else activeLocFilters.add(f);
+    if(activeLocFilters.size===0)activeLocFilters=new Set(['all']);
+  }
+  renderLocFilterBar();
+  filterLocations();
+  document.getElementById('locDropdown').classList.add('open');
+}
+
+function filterLocations(){
+  const q=document.getElementById('locSearch').value.toLowerCase();
+  renderDropdown(q);
+  document.getElementById('locDropdown').classList.add('open');
+  document.getElementById('patchSelectGroup').style.display='none';
+  builderState.selectedLocation=null;
+}
+
+function showDropdown(){renderDropdown(document.getElementById('locSearch').value.toLowerCase());document.getElementById('locDropdown').classList.add('open');}
+function hideDropdownDelayed(){setTimeout(()=>document.getElementById('locDropdown').classList.remove('open'),200);}
+
+function renderDropdown(q){
+  let filtered=LOCATIONS.filter(l=>{
+    const matchesQuery=!q||l.name.toLowerCase().includes(q)||(l.region||'').toLowerCase().includes(q);
+    const matchesPatch=activeLocFilters.has('all')||l.patches.some(p=>activeLocFilters.has(p));
+    return matchesQuery&&matchesPatch;
+  });
+  const dd=document.getElementById('locDropdown');
+  if(!filtered.length){dd.innerHTML='<div class="loc-opt" style="color:var(--text3);font-style:italic;padding:10px 12px;">No locations found</div>';return;}
+  dd.innerHTML=filtered.slice(0,25).map(l=>`
+    <div class="loc-opt" onmousedown="selectLocation('${l.name}')">
+      <div class="loc-opt-name">${l.name} <span style="color:var(--text3);font-size:9px;">${l.region}</span>${l.immune?'<span class="loc-opt-immune"> ⚜ Immune</span>':''}</div>
+      <div class="loc-opt-patches">${l.patches.map(p=>PATCH_TYPES[p]?.label||p).join(', ')} · ${l.note||''}</div>
+    </div>`).join('');
+}
+
+function selectLocation(name){
+  const loc=LOCATIONS.find(l=>l.name===name);if(!loc)return;
+  builderState.selectedLocation=loc;
+  document.getElementById('locSearch').value=name;
+  document.getElementById('locDropdown').classList.remove('open');
+  const pg=document.getElementById('patchSelectGroup');
+  pg.style.display='block';
+  document.getElementById('immuneToggle').checked=!!loc.immune;
+  const grid=document.getElementById('patchGrid');
+  grid.innerHTML=loc.patches.map(p=>{
+    const pt=PATCH_TYPES[p];
+    // Pre-check only if matches active filter
+    const checked=activeLocFilters.has('all')||activeLocFilters.has(p);
+    return`<input type="checkbox" class="patch-cb" id="pc_${p}" value="${p}" ${checked?'checked':''}>
+      <label class="patch-label ${pt?.color||'tag-custom'}" for="pc_${p}">${pt?.icon||''} ${pt?.label||p}</label>`;
+  }).join('');
+}
+
+function addStopFromPicker(){
+  const loc=builderState.selectedLocation;if(!loc)return;
+  const patches=[...document.querySelectorAll('.patch-cb:checked')].map(c=>c.value);
+  if(!patches.length){showToast('⚠️ Select at least one patch type');return;}
+  const immune=document.getElementById('immuneToggle').checked;
+  if(builderState.stops.find(s=>s.name===loc.name)){showToast('⚠️ Location already in run');return;}
+  builderState.stops.push({name:loc.name,patches,immune,region:loc.region});
+  document.getElementById('locSearch').value='';
+  document.getElementById('patchSelectGroup').style.display='none';
+  builderState.selectedLocation=null;
+  renderBuilderStops();
+}
+
+function renderBuilderStops(){
+  const wrap=document.getElementById('builderStopsGroup');
+  const list=document.getElementById('builderStopsList');
+  if(!builderState.stops.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=builderState.stops.map((s,i)=>`
+    <div class="builder-stop">
+      <div class="builder-stop-num">${i+1}</div>
+      <div class="builder-stop-name">${s.name}</div>
+      <div class="builder-stop-tags">
+        ${s.immune?'<span class="tag tag-immune">⚜</span>':''}
+        ${(s.patches||[]).map(p=>{const pt=PATCH_TYPES[p];return`<span class="tag ${pt?.color||'tag-custom'}">${pt?.icon||''}</span>`;}).join('')}
+      </div>
+      ${i>0?`<button class="builder-stop-del" onclick="moveStop(${i},-1)" title="Move up">↑</button>`:''}
+      ${i<builderState.stops.length-1?`<button class="builder-stop-del" onclick="moveStop(${i},1)" title="Move down">↓</button>`:''}
+      <button class="builder-stop-del" onclick="removeStop(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeStop(i){builderState.stops.splice(i,1);renderBuilderStops();}
+function moveStop(i,dir){const j=i+dir;if(j<0||j>=builderState.stops.length)return;[builderState.stops[i],builderState.stops[j]]=[builderState.stops[j],builderState.stops[i]];renderBuilderStops();}
+
+function addDailyStep(){
+  const text=document.getElementById('dailyStepInput').value.trim();if(!text)return;
+  builderState.dailySteps.push({text,emoji:builderState.dailyEmoji});
+  document.getElementById('dailyStepInput').value='';renderBuilderDaily();
+}
+function renderBuilderDaily(){
+  const el=document.getElementById('builderDailyList');
+  if(!builderState.dailySteps.length){el.innerHTML='';return;}
+  el.innerHTML=builderState.dailySteps.map((s,i)=>`
+    <div class="builder-stop">
+      <span style="font-size:14px;">${s.emoji||'🌅'}</span>
+      <div class="builder-stop-name" style="font-family:'Crimson Text',serif;font-size:13px;">${s.text}</div>
+      <button class="builder-stop-del" onclick="removeDailyStep(${i})">✕</button>
+    </div>`).join('');
+}
+function removeDailyStep(i){builderState.dailySteps.splice(i,1);renderBuilderDaily();}
+
+function initEmojiPickers(){
+  document.getElementById('emojiRow').innerHTML=EMOJIS.map(e=>`<span class="emoji-opt" onclick="pickEmoji('${e}')">${e}</span>`).join('');
+  document.getElementById('dailyEmojiRow').innerHTML=EMOJIS.map(e=>`<span class="emoji-opt" onclick="pickDailyEmoji('${e}')">${e}</span>`).join('');
+}
+function toggleEmojiPicker(){const p=document.getElementById('emojiPicker');p.style.display=p.style.display==='none'?'block':'none';}
+function toggleDailyEmoji(){const p=document.getElementById('dailyEmojiPicker');p.style.display=p.style.display==='none'?'block':'none';}
+function pickEmoji(e){builderState.emoji=e;document.getElementById('emojiBtn').textContent=e;document.getElementById('emojiPicker').style.display='none';}
+function pickDailyEmoji(e){builderState.dailyEmoji=e;document.getElementById('dailyEmojiBtn').textContent=e;document.getElementById('dailyEmojiPicker').style.display='none';}
+
+// ════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════
+function formatXp(xp){if(!xp)return'0';if(xp>=1000000)return(xp/1000000).toFixed(1)+'M';if(xp>=1000)return(xp/1000).toFixed(1)+'k';return xp.toLocaleString();}
+function timeSince(ts){const d=Date.now()-ts;const mins=Math.floor(d/60000);if(mins<60)return`${mins}m ago`;const hrs=Math.floor(mins/60);if(hrs<24)return`${hrs}h ago`;return`${Math.floor(hrs/24)}d ago`;}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+loadState();
+renderSidebar();
+renderMainArea();
+
+document.getElementById('builderModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('harvestModal').addEventListener('click',function(e){if(e.target===this)closeHarvestModal();});
+</script>
+</body>
+</html>
